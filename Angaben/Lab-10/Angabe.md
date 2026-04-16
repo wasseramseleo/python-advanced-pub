@@ -1,130 +1,265 @@
-# Lab 10: Type Annotations & typing
+# Lab 10: Type Annotations, Generics & mypy
 
 ## Lernziele
 
-In diesem Lab fügen Sie dem Code unserer Banking-App Typ-Annotationen hinzu, um die Lesbarkeit zu verbessern und die statische Analyse (z.B. mit `mypy`) zu ermöglichen.
+In diesem Lab fügen Sie der Banking-App vollständige Typ-Annotationen hinzu, führen statische Code-Analyse mit **mypy** durch und nutzen die modernen Typing-Features von **Python 3.12**.
 
-  * Die Syntax für Typ-Annotationen bei Variablen und Funktionen anwenden (`: type` und `-> ReturnType`).
-  * Verstehen, warum Annotationen die Code-Qualität und Dokumentation verbessern, aber *keine* Laufzeit-Fehler (Runtime Errors) auslösen.
-  * Moderne Annotationen für Container (z.B. `list[int]`) verwenden.
-  * "Union Types" (z.B. `int | str`) und optionale Typen (z.B. `str | None`) korrekt einsetzen.
+* Die Syntax für Typ-Annotationen bei Variablen und Funktionen anwenden (`: type` und `-> ReturnType`).
+* Typaliase mit dem **`type`-Keyword** (Python 3.12, PEP 695) definieren.
+* **Generische Klassen** mit der neuen `[T]`-Syntax erstellen.
+* Union Types (`int | str`), optionale Typen (`str | None`) und `Callable` korrekt einsetzen.
+* **mypy** als statisches Analyse-Tool einrichten und ausführen.
+* Verstehen, warum Annotationen **keine** Laufzeit-Fehler auslösen.
+
+---
+
+## Vorbereitung: mypy installieren
+
+mypy ist ein statischer Type-Checker, der Ihren Code *vor* der Ausführung analysiert.
+
+```bash
+# Mit uv (empfohlen, wenn pyproject.toml vorhanden):
+uv add mypy --dev
+
+# Alternativ mit pip:
+pip install mypy
+```
+
+Führen Sie mypy nach jeder Aufgabe aus und korrigieren Sie gemeldete Fehler:
+
+```bash
+# Einzelne Datei prüfen:
+mypy Lab-10/account.py
+
+# Strengere Prüfung (empfohlen):
+mypy Lab-10/account.py --strict
+```
+
+> Die mypy-Konfiguration befindet sich in der `pyproject.toml` im Projektroot.
+
+---
 
 ## Szenario
 
-Unser Projekt wächst. Neue Entwickler finden es schwierig, die `BankAccount`-Klasse zu verwenden, da sie raten müssen, welche Datentypen die Methoden erwarten (z.B. `deposit(amount)` - ist `amount` ein `int`, `float` oder `str`?) und was sie zurückgeben.
+Unser Projekt wächst. Neue Entwickler finden es schwierig, die `BankAccount`-Klasse zu verwenden, da sie raten müssen, welche Datentypen erwartet werden. Wir führen Typ-Annotationen ein und sichern die Qualität mit **mypy**.
 
-Um die Wartbarkeit zu erhöhen und Tools wie `mypy` nutzen zu können, führen wir im gesamten Projekt Typ-Annotationen ein. Ihre Aufgabe ist es, die `BankAccount`-Klasse und zugehörige Funktionen zu annotieren.
-
+---
 
 ### Angabe
 
-**Ziel:** Fügen Sie einer vereinfachten `BankAccount`-Klasse (basierend auf Lab 1) und einer Hilfsfunktion vollständige Typ-Annotationen hinzu.
+**Ziel:** Fügen Sie der `BankAccount`-Klasse vollständige Typ-Annotationen hinzu und definieren Sie Typaliase mit dem **`type`-Keyword** (Python 3.12).
 
-1.  **Vorbereitung:** Starten Sie mit der folgenden *un-annotierten* Kopiervorlage.
-2.  **Aufgabe:** Fügen Sie überall dort Typ-Annotationen hinzu, wo sie fehlen (markiert mit `...`).
-
-**Kopiervorlage (bitte vervollständigen):**
+**Kopiervorlage (bitte in `account.py` einfügen und vervollständigen):**
 
 ```python
-# === Kopiervorlage (bitte annotieren) ===
+# account.py
+
+# 1. Definieren Sie Typaliase mit dem 'type'-Keyword (Python 3.12):
+#    (Syntax: type Name = Typ)
+type Amount = ...        # Sollte float sein
+type AccountId = ...     # Sollte str sein
+
 
 class BankAccount:
-    """
-    Stellt ein Bankkonto dar. (Version für Type Hinting)
-    """
-    
-    # 1. Klassen-Attribute annotieren
-    owner: ...       # Sollte str sein
-    account_number: ... # Sollte str sein
-    _balance: ...      # Sollte float sein
+    """Stellt ein Bankkonto dar."""
+
+    # 2. Klassenattribute annotieren
+    owner: ...
+    account_number: ...
+    _balance: ...
 
     def __init__(self, owner, account_number, initial_balance=0.0):
-        # 2. __init__ Parameter annotieren (Return-Type ist implizit None)
+        # 3. Parameter annotieren:
+        #    owner: str, account_number: AccountId,
+        #    initial_balance: Amount, Return-Type: None
         self.owner = owner
         self.account_number = account_number
         self._balance = initial_balance
 
     def deposit(self, amount) -> ...:
-        # 3. 'amount' (float) und Return-Type (bool) annotieren
+        # 4. 'amount' als Amount annotieren, Return-Type: bool
         if amount > 0:
             self._balance += amount
             return True
         return False
 
     def withdraw(self, amount) -> ...:
-        # 4. 'amount' (float) und Return-Type (bool) annotieren
+        # 5. 'amount' als Amount annotieren, Return-Type: bool
         if 0 < amount <= self._balance:
             self._balance -= amount
             return True
         return False
 
     def get_balance(self) -> ...:
-        # 5. Return-Type (float) annotieren
+        # 6. Return-Type: Amount
         return self._balance
 
     def get_owner_name(self) -> ...:
-        # 6. Return-Type (str) annotieren
+        # 7. Return-Type: str
         return self.owner
 
-# --- Externe Funktion zum Annotieren ---
 
-def find_account_by_number(accounts, number):
-    # 7. Annotieren Sie:
-    #    'accounts' (eine Liste von BankAccount-Objekten) -> list[BankAccount]
-    #    'number' (str)
-    #    Return-Type (Das Konto ODER None, falls nicht gefunden) -> BankAccount | None
-    
+# 8. Typalias für eine Liste von Konten (Python 3.12):
+type AccountList = ...   # list[BankAccount]
+
+
+def find_account(accounts, number):
+    # 9. Annotieren Sie:
+    #    'accounts': AccountList
+    #    'number':   AccountId
+    #    Return-Type: BankAccount | None
     for acc in accounts:
         if acc.account_number == number:
             return acc
     return None
-
-# --- Test-Code (muss nach der Annotation fehlerfrei laufen) ---
-print("--- Angabe Test ---")
-acc1 = BankAccount("Max Mustermann", "AT123", 100.0)
-acc1.deposit(50.5)
-print(f"Saldo: {acc1.get_balance()}")
-
-accounts_list = [acc1]
-found_acc = find_account_by_number(accounts_list, "AT123")
-
-if found_acc:
-    print(f"Gefunden: {found_acc.get_owner_name()}")
-
-not_found_acc = find_account_by_number(accounts_list, "XYZ")
-print(f"Nicht gefunden: {not_found_acc}")
 ```
 
------
+**Testen mit mypy:**
 
-### Bonus-Herausforderung
+```bash
+mypy Lab-10/account.py --strict
+```
 
-**Ziel:** Verwenden Sie komplexe Typen aus dem `typing`-Modul (oder moderne Äquivalente) wie `Callable` und `dict`.
+Ziel: mypy meldet **0 Fehler**.
 
-**Szenario:** Wir benötigen eine flexible Funktion zur Verarbeitung von Transaktions-Batches. Diese Funktion soll eine "Callback"-Funktion (einen "Handler") akzeptieren, die entscheidet, was mit jeder Transaktion geschieht.
+---
 
-1.  **Import:** Importieren Sie `Callable` aus dem `typing`-Modul.
-2.  **Daten:** Verwenden Sie diese Beispieldaten:
-    ```python
-    transactions_batch = [
-        {'id': 'T1', 'type': 'DEPOSIT', 'amount': 100.0},
-        {'id': 'T2', 'type': 'WITHDRAW', 'amount': 50.0},
-        {'id': 'T3', 'type': 'INVALID', 'amount': -10.0}
-    ]
-    ```
-3.  **Callback-Handler (Beispiel):** Erstellen Sie einen Handler (eine normale Funktion):
-    ```python
-    def simple_deposit_handler(tx_data):
-        # (Parameter 'tx_data' muss annotiert werden)
-        if tx_data['type'] == 'DEPOSIT':
-            print(f"Verarbeite Einzahlung: {tx_data['amount']}")
-            return True
-        return False
-    ```
-4.  **Hauptfunktion `process_batch` (Hier liegt die Aufgabe):**
-      * Erstellen Sie eine Funktion `process_batch`.
-      * Annotieren Sie die Argumente:
-          * `transactions`: Eine Liste von Dictionaries. Jedes `dict` hat `str`-Schlüssel und Werte, die `str` ODER `float` sein können. (Tipp: `list[dict[str, str | float]]`)
-          * `handler`: Ein "Callable". Der Handler nimmt ein `dict` (wie oben) entgegen und gibt ein `bool` zurück. (Tipp: `Callable[[dict[str, str | float]], bool]`)
-      * Annotieren Sie den Rückgabewert: Die Funktion gibt `None` zurück.
-      * **Implementierung:** Die Funktion soll über `transactions` iterieren und den `handler` für jede Transaktion aufrufen.
+### Bonus 1
+
+**Ziel:** Erstellen Sie eine **generische Klasse** mit der neuen `[T]`-Syntax.
+
+Die Slides zeigen generische *Funktionen* (`def summe[T](...)`). Klassen können auf **dieselbe Weise** generisch gemacht werden:
+
+```python
+class Stack[T]:
+    ...
+```
+
+**Aufgabe:** Implementieren Sie die generische `Stack[T]`-Klasse in `main.py`:
+
+```python
+# main.py
+from account import BankAccount, find_account, AccountList, AccountId
+
+# --- Generische Stack-Klasse (Python 3.12 Syntax) ---
+
+class Stack[T]:
+    """Ein generischer LIFO-Stack für beliebige Typen."""
+
+    def __init__(self) -> None:
+        self._items: list[T] = []
+
+    def push(self, item: ...) -> None:     # 1. Typ von 'item' angeben
+        self._items.append(item)
+
+    def pop(self) -> ...:                  # 2. Return-Typ: T | None
+        if self._items:
+            return self._items.pop()
+        return None
+
+    def peek(self) -> ...:                 # 3. Return-Typ: T | None
+        if self._items:
+            return self._items[-1]
+        return None
+
+    def is_empty(self) -> bool:
+        return len(self._items) == 0
+
+    def __len__(self) -> int:
+        return len(self._items)
+
+
+# --- Test: Stack mit verschiedenen Typen ---
+int_stack: Stack[int] = Stack()
+int_stack.push(10)
+int_stack.push(20)
+print(f"Top (int): {int_stack.peek()}")     # 20
+print(f"Pop:       {int_stack.pop()}")      # 20
+print(f"Länge:     {len(int_stack)}")       # 1
+
+str_stack: Stack[str] = Stack()
+str_stack.push("Hallo")
+str_stack.push("Welt")
+print(f"Top (str): {str_stack.peek()}")     # Welt
+
+# mypy-Frage: Was meldet mypy bei dieser Zeile? Warum?
+# int_stack.push("falscher Typ")
+
+# --- Aufgabe 1 testen ---
+accounts: AccountList = [
+    BankAccount("Anna Müller", "AT001", 500.0),
+    BankAccount("Bob Kaiser", "AT002", 250.0),
+]
+
+found = find_account(accounts, "AT002")
+if found:
+    print(f"Gefunden: {found.get_owner_name()}, Saldo: {found.get_balance()}")
+
+not_found = find_account(accounts, "XYZ")
+print(f"Nicht gefunden: {not_found}")
+```
+
+```bash
+mypy Lab-10/main.py --strict
+```
+
+---
+
+## Bonus 2
+
+**Ziel:** Verwenden Sie `TypedDict` für typsichere Dictionaries und `Callable` für Callbacks.
+
+**Hintergrund:** `dict[str, str | float]` ist ungenau – wir wissen genau, welche Schlüssel und Typen ein Transaktions-Dict hat. `TypedDict` macht das präzise und mypy-freundlich.
+
+**Kopiervorlage für `main_bonus.py`:**
+
+```python
+# main_bonus.py
+from typing import Callable, TypedDict
+
+
+# 1. Definieren Sie ein TypedDict für eine Transaktion:
+class Transaction(TypedDict):
+    id: str
+    type: str      # 'DEPOSIT', 'WITHDRAW' oder 'INVALID'
+    amount: float
+
+
+# 2. Handler mit korrekter TypedDict-Annotation:
+def deposit_handler(tx: Transaction) -> bool:
+    """Verarbeitet nur DEPOSIT-Transaktionen."""
+    if tx['type'] == 'DEPOSIT':
+        print(f"  Einzahlung: {tx['amount']:.2f} €")
+        return True
+    return False
+
+
+# 3. Implementieren Sie process_batch mit korrekten Annotationen:
+#    - transactions: list[Transaction]
+#    - handler:      Callable[[Transaction], bool]
+#    - return:       None
+def process_batch(transactions, handler) -> None:
+    print(f"\nVerarbeite Batch ({len(transactions)} Transaktionen):")
+    ok = sum(1 for tx in transactions if handler(tx))
+    print(f"  → {ok} verarbeitet, {len(transactions) - ok} übersprungen.")
+
+
+# 4. Testdaten und Aufruf:
+batch: list[Transaction] = [
+    {'id': 'T1', 'type': 'DEPOSIT',  'amount': 100.0},
+    {'id': 'T2', 'type': 'WITHDRAW', 'amount':  50.0},
+    {'id': 'T3', 'type': 'DEPOSIT',  'amount': 300.0},
+    {'id': 'T4', 'type': 'INVALID',  'amount':  -10.0},
+]
+
+process_batch(batch, deposit_handler)
+
+
+# 5. Bonus-Bonus: Schreiben Sie einen 'withdraw_handler' und testen Sie ihn.
+#    Definieren Sie außerdem eine Funktion mit falschem Return-Typ (-> str)
+#    und übergeben Sie sie an process_batch. Was meldet mypy?
+```
+
+```bash
+mypy Lab-10/main_bonus.py --strict
+```
