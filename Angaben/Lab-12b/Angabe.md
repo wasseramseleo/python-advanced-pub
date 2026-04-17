@@ -9,12 +9,10 @@ In diesem Lab lernen Sie, wie Sie manuelle `requests`-Aufrufe durch einen automa
 
 ## Vorbereitung
 1. Stellen Sie sicher, dass das Banking-Backend (`backend.py`) läuft.
-2. Installieren Sie den Generator:
-   `pip install openapi-python-client`
-3. Generieren Sie den Client basierend auf der bereitgestellten `openapi.json`:
-   `openapi-python-client generate --path openapi.json`
-4. Installieren Sie den generierten Client lokal (im neu entstandenen Ordner):
-   `pip install ./banking-app-api-client`
+2. Generieren Sie den Client basierend auf der bereitgestellten `openapi.json`:
+   `uvx openapi-python-client generate --path openapi.json --meta pdm`
+3. Installieren Sie den generierten Client lokal (im neu entstandenen Ordner):
+   `uv pip install ./banking-app-api-client`
 
 ### Angabe
 Ersetzen Sie Ihre manuelle `get_account_details`-Logik durch den generierten Client.

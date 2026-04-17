@@ -1,0 +1,16 @@
+[project]
+name = "lab-12b"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "banking-app-api-client",
+    "flask>=3.1.3",
+    "httpx>=0.28.1",
+    "openapi-python-client>=0.28.3",
+    "requests>=2.33.1",
+]
+
+[tool.uv.sources]
+banking-app-api-client = { workspace = true }
